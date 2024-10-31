@@ -1,5 +1,5 @@
 {
-  "name": "Controle-de-Estoque",
+  "name": "controle-de-estoque",
   "version": "0.0.0",
   "scripts": {
     "dev": "vite",
@@ -19,5 +19,9 @@
     "unplugin-vue-components": "^0.27.2",
     "vite": "^5.3.3",
     "vite-plugin-vuetify": "^2.0.3"
-  }
+  },
+  "description": "Controle de Estoque",
+  "main": "index.js",
+  "author": "Cristian-Tebaldi,Angelo-Henrique",
+  "license": "ISC"
 }
