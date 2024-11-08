@@ -1,5 +1,5 @@
 <template>
-  <v-app theme="">
+  <v-app>
     <v-main>
 
       <div class="d-flex mt-5">
@@ -16,16 +16,29 @@
             width="120"
             variant="tonal"
             color="red"
-            >Saídas</v-btn>
+            >Vendas</v-btn>
             <v-btn
             width="120"
             variant="tonal"
             color="green"
-            >Entradas</v-btn>
+            >Compras</v-btn>
           </v-card-actions>
         </v-card>
       </div>
 
+      <v-container>
+        <v-data-table
+          :headers="headers"
+          :items="products"
+        >
+        <template v-slot:item.product="{ product 
+        }">
+            <v-chip :color="getColor(nome)">
+              {{ product }}
+            </v-chip>
+          </template>
+        </v-data-table>
+      </v-container>
 
      <div class="d-flex justify-center" 
      style="position: absolute;
@@ -59,5 +72,19 @@
 </template>
 
 <script setup>
-  //
+  import axios from "axios";
+  import { ref, onMounted } from "vue";
+
+  const products = ref([]);
+
+
+  onMounted(() => {
+    fetchProducts();
+  })
+
+
+  const fetchProducts = async () => {
+    const response = await axios.get(`http://localhost:8080/produto`)
+    products.value = response.data
+  };
 </script>
