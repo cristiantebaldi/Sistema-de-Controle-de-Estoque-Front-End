@@ -1,44 +1,41 @@
 <template>
     <div class="d-flex mt-5">
       <v-card 
-      class="d-flex align-center"
-      rounded="e-lg"
-      height="50" 
-      >
-      <v-card-text>
-        FILTRAR POR:
-      </v-card-text>
-      <v-card-actions>
-          <v-btn
-          width="120"
-          variant="tonal"
-          color="red"
-          >Vendas</v-btn>
-          <v-btn
-          width="120"
-          variant="tonal"
-          color="green"
-          >Compras</v-btn>
-        </v-card-actions>
+        class="d-flex align-center"
+        rounded="e-lg"
+        height="50" 
+        >
+        <v-card-text>
+          BUSCAR
+        </v-card-text>
       </v-card>
+      <v-card-actions>
+        <v-btn
+        prepend-icon="mdi-calendar"
+        width="120"
+        variant="tonal"
+        color="blue"
+        >DATA</v-btn>
+      </v-card-actions>
+      
     </div>
         
-        <div>
-          <v-container>
-            <v-data-table
-              :headers="headersSale"
-              :items="sales"
-              :height="500"
-              >
-              <template #item.total_arrecadado="{ item }">
-                {{ formatMoney(item.total_arrecadado) }}
-              </template>
-              <template #item.data_venda="{ item }">
-                {{ formatDate(item.data_venda) }}
-              </template>
-            </v-data-table>
-          </v-container>
-        </div>
+    <div>
+      <v-container>
+        <v-data-table
+          :headers="headersSale"
+          :items="sales"
+          :height="420"
+          >
+          <template #item.total_arrecadado="{ item }">
+            {{ formatMoney(item.total_arrecadado) }}
+          </template>
+          <template #item.data_venda="{ item }">
+            {{ formatDate(item.data_venda) }}
+          </template>
+        </v-data-table>
+      </v-container>
+    </div>
   </template>
   
   <script setup>
