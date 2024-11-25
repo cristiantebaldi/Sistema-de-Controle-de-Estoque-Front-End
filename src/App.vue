@@ -1,10 +1,7 @@
 <template>
   <v-app>
     <router-view></router-view>
-    <div class="d-flex justify-center" 
-      style="position: absolute;
-      bottom: 0;
-      width: 100%;">
+    <div class="d-flex justify-center" >
       <v-card 
       rounded="sm"
       height="95"

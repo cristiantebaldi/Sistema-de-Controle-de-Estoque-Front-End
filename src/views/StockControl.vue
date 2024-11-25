@@ -51,10 +51,30 @@
           <template #item.preco="{ item }">
             {{ formatMoney(item.preco) }}
           </template>
+          <template #item.actions="{ item }">
+            <v-card-actions>
+              <v-btn
+                color="yellow"
+                icon="mdi-pencil"
+                size="small"
+                @click="updateProduct(item)">
+              </v-btn>
+              <v-btn
+              color="red"
+              icon="mdi-delete"
+              size="small"
+              @click="deleteProduct(item)">
+              </v-btn>
+          </v-card-actions>
+          </template>
+          <template #item.valor_estoque="{ item }">
+            {{ formatMoney(item.valor_estoque) }}
+          </template>
         </v-data-table>
       </v-container>
     </div>
 
+    <!-- Caixa de Dialogo para criar e editar prduto -->
     <v-dialog v-model="dialog" width="500" >
       <v-card>
         <v-card
@@ -62,9 +82,9 @@
         rounded="0"
         >
          <v-card-text
-         class="d-flex justify-center"
+         class="d-flex justify-center "
          > 
-          <h2>Novo Produto</h2>
+          <h2>Informações do Produto</h2>
          </v-card-text>
         </v-card>
         <v-card-text>
@@ -74,7 +94,8 @@
             <v-text-field
             v-model="product.nome"
             :rules="productRules"
-            label="Nome do Produto"/>
+            label="Nome do Produto"
+            type="input"/>
             </v-col>
             <v-col cols="12" md="5" sm="5">
             <v-text-field
@@ -82,13 +103,15 @@
             :rules="amountRules"
             v-model="product.quantidade"
             label="Quantidade"
+            type="number"
             />
             </v-col>
             <v-col cols="12" md="7" sm="6">
             <v-text-field
             class="pt-2"
             v-model="product.preco"
-            label="Preço"/>
+            label="Preço"
+            ref="inputRef"/>
             </v-col>
             <v-col
             cols="12"
@@ -98,29 +121,39 @@
             <v-text-field
             class="pl-2 pt-2"
             :rules="amountRules"
-            v-model="product.quantidade_min"
+            v-model="product.quantidade_minima"
             label="Quantidade Mínima"
-            hint="Informa quando o estoque for abaixo da quantidade mínima."/>
+            hint="Alerta para estoque baixo"
+            type="number"/>
             </v-col>
           </v-row>
         </v-card-text>
         
-        <v-card-actions class="">
+        <v-card-actions>
           <v-btn
           prepend-icon="mdi-close"
           @click="dialog = false">
           cancelar</v-btn>
           <v-btn
+          color="orange"
           prepend-icon="mdi-content-save"
           @click="saveProduct">salvar</v-btn>
         </v-card-actions>
       </v-card>
-
     </v-dialog>
+
+    <!-- Caixa de Dialogo para excluir produto -->
+
+    <!-- Caixa de Dialogo para venda -->
+
+    <!-- Caixa de Dialogo para repor estoque -->
+
+    <!-- Caixa de Dialogo para baixo estoque -->
 </template>
   <script setup>
     import axios from "axios";
-    import { ref, onMounted } from "vue";
+    import { useCurrencyInput } from 'vue-currency-input';
+    import { ref, onMounted, watch } from "vue";
 
     const products = ref([]);
     const product = ref({});
@@ -131,6 +164,11 @@
         if (value) return true;
 
         return "O campo deve ser preenchido.";
+      },
+
+      value => {
+        const existingProduct = products.value.find(product => product.nome.toLowerCase() === value.toLowerCase());
+        return !existingProduct || "Produto já existe.";
       }
     ]
 
@@ -151,11 +189,13 @@
         return "Digte apenas números.";
       }
     ]
+
     const headersProduct = ref([
     {title: "Produto", value: "nome"},
     {title: "Estoque Atual", value: "quantidade"},
     {title: "Preço unitário", value: "preco"},
-    {title: "Estoque Mínimo", value: "quantidade_min"},
+    {title: "Valor Total", value: "valor_estoque"},
+    {title: "Ações", key: "actions"},
   ]);
 
   const formatMoney = (value) => {
@@ -164,23 +204,58 @@
       currency: "BRL",
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(value / 100);
+    }).format(value);
   };
 
-    onMounted(() => {
-      fetchProducts();
-    })
+  // Funcionalidade para formatar o dinheiro
+  const props = defineProps({ modelValue: Number });
+
+  const { inputRef, setValue } = useCurrencyInput({
+    currency: 'BRL',
+    hideCurrencySymbolOnFocus: false,
+    hideGroupingSeparatorOnFocus: false,
+    autoDecimalMode: true,
+    precision: 2,
+  });
+
+  watch(
+    () => props.modelValue,
+    (value) => {
+      setValue(value);
+    }
+  );
+  
+  const unformatCurrency = (formattedValue) => {
+  return parseFloat(
+    formattedValue.replace(/[^0-9,-]+/g, "").replace(",", ".")
+  );
+  };  
+
+  onMounted(() => {
+    fetchProducts();
+  })
 
   const fetchProducts = async () => {
     const response = await axios.get(`http://localhost:8080/produto`)
     products.value = response.data
   };
 
-  const createProduct = async () => {
+  const updateProduct = (e) => {
+    product.value = e;
     dialog.value = true;
-  }
+  };
+  const createProduct = async () => {
+    product.value = {
+    nome: "",
+    quantidade: null,
+    preco: null,
+    quantidade_minima: null,
+    };
+    dialog.value = true;
+  };
 
   const saveProduct = async () => {
+    product.value.preco = unformatCurrency(product.value.preco);
     if (product.value.id) {
       await axios.put(`http://localhost:8080/produto/${product.value.id}`, product.value
       );
@@ -189,6 +264,11 @@
     };
     await axios.post(`http://localhost:8080/produto`, product.value);
     dialog.value = false;
+    fetchProducts();
+  }
+
+  const deleteProduct = async (product) => {
+    await axios.delete(`http://localhost:8080/produto/${product.id}`, product.value);
     fetchProducts();
   }
 
