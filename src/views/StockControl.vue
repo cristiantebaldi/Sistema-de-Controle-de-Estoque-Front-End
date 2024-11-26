@@ -13,6 +13,7 @@
       <v-card-actions
       class="me-auto">
         <v-btn
+        @click="createSell"
         width="120"
         variant="tonal"
         color="green"
@@ -34,6 +35,7 @@
         prepend-icon="mdi-package-variant-closed-check"
         >Repor Estoque</v-btn>
         <v-btn
+        @click="openDialogProductsLowStock"
         width="200"
         variant="tonal"
         color="deep-orange-darken-2"
@@ -121,7 +123,7 @@
             <v-text-field
             class="pl-2 pt-2"
             :rules="amountRules"
-            v-model="product.quantidade_minima"
+            v-model="product.quantidade_min"
             label="Quantidade Mínima"
             hint="Alerta para estoque baixo"
             type="number"/>
@@ -145,10 +147,79 @@
     <!-- Caixa de Dialogo para excluir produto -->
 
     <!-- Caixa de Dialogo para venda -->
-
+    <v-dialog v-model="dialogSell" width="500" >
+      <v-card>
+        <v-card
+        variant="tonal"
+        rounded="0"
+        >
+         <v-card-text
+         class="d-flex justify-center "
+         > 
+          <h2>Realizar Venda</h2>
+         </v-card-text>
+        </v-card>
+        <v-card-text>
+          <v-row no-gutters>
+            <v-col
+            cols="12" md="7" sm="7">
+            <v-select
+            v-model="sell.nome"
+            :items="products.map(product => product.nome)"
+            label="Nome do Produto"/>
+            </v-col>
+            <v-col cols="12" md="5" sm="5">
+            <v-text-field
+            class="pl-2"
+            :rules="amountRules"
+            v-model="sell.quantidade"
+            label="Quantidade"
+            type="number"
+            />
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions>
+          <v-btn
+          prepend-icon="mdi-close"
+          @click="dialogSell = false">
+          cancelar</v-btn>
+          <v-btn
+          color="green"
+          prepend-icon="mdi-content-save"
+          @click="saveSell">salvar</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
     <!-- Caixa de Dialogo para repor estoque -->
 
+
     <!-- Caixa de Dialogo para baixo estoque -->
+    <v-dialog v-model="dialogLowStock" width="500" >
+      <v-card>
+        <v-card
+        variant="tonal"
+        rounded="0"
+        >
+         <v-card-text
+         class="d-flex justify-center "
+         > 
+          <h2>Produtos abaixo do estoque</h2>
+         </v-card-text>
+        </v-card>
+          <v-data-table
+            :headers="headersProductsLowStock"
+            :items="productsLowStock"
+            :height="300"
+            :width="500">
+            <template #item.preco="{ item }">
+            {{ formatMoney(item.preco/100) }}
+            </template>
+          </v-data-table>
+      </v-card>
+    </v-dialog>
+
+
 </template>
   <script setup>
     import axios from "axios";
@@ -158,6 +229,13 @@
     const products = ref([]);
     const product = ref({});
     const dialog = ref(false);
+
+    const sales = ref([]);
+    const sell = ref({});
+    const dialogSell = ref(false);
+
+    const productsLowStock = ref([]);
+    const dialogLowStock = ref(false);
 
     const productRules = [
       value => {
@@ -195,8 +273,17 @@
     {title: "Estoque Atual", value: "quantidade"},
     {title: "Preço unitário", value: "preco"},
     {title: "Valor Total", value: "valor_estoque"},
-    {title: "Ações", key: "actions"},
-  ]);
+    {title: "Ações", value: "actions"},
+    ]);
+
+
+    const headersProductsLowStock = ref([
+    {title: "Produto", value: "nome"},
+    {title: "Estoque Atual", value: "quantidade"},
+    {title: "Preço unitário", value: "preco"},
+    {title: "Quantidade Miníma", value: "quantidade_min"},
+    ]);
+  
 
   const formatMoney = (value) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -240,37 +327,92 @@
     products.value = response.data
   };
 
-  const updateProduct = (e) => {
-    product.value = e;
+  const updateProduct = (item) => {
+    product.value = {
+        ...item,
+        preco: formatMoney(item.preco), // Mostra o valor formatado ao editar
+    };
     dialog.value = true;
-  };
+};
+
   const createProduct = async () => {
     product.value = {
     nome: "",
     quantidade: null,
     preco: null,
-    quantidade_minima: null,
+    quantidade_min: null,
     };
     dialog.value = true;
   };
 
   const saveProduct = async () => {
     product.value.preco = unformatCurrency(product.value.preco);
+
     if (product.value.id) {
-      await axios.put(`http://localhost:8080/produto/${product.value.id}`, product.value
-      );
-      dialog.value = false;
-      return;
-    };
-    await axios.post(`http://localhost:8080/produto`, product.value);
+        await axios.put(`http://localhost:8080/produto/${product.value.id}`, product.value);
+    } else {
+        await axios.post(`http://localhost:8080/produto`, product.value);
+    }
+
     dialog.value = false;
     fetchProducts();
-  }
+};
 
   const deleteProduct = async (product) => {
+    
     await axios.delete(`http://localhost:8080/produto/${product.id}`, product.value);
     fetchProducts();
   }
+
+  const createSell = () => {
+    dialogSell.value = true
+  }
+  const saveSell = async () => {
+  try {
+
+    await axios.post(`http://localhost:8080/venda`, {
+      data_compra: new Date().toISOString(),
+    });
+
+  
+    const vendasResponse = await axios.get(`http://localhost:8080/venda`);
+    const vendas = vendasResponse.data;
+    const ultimaVenda = vendas[vendas.length - 1]; 
+    const idVenda = ultimaVenda.id;
+
+
+    const selectedProduct = products.value.find(
+      (p) => p.nome === sell.value.nome
+    );
+
+    if (!selectedProduct) {
+      alert("Produto não encontrado.");
+      return;
+    }
+
+  
+    await axios.post(`http://localhost:8080/venda_produto`, {
+      id_produto: selectedProduct.id,
+      id_venda: idVenda,
+      quantidade: sell.value.quantidade,
+    });
+
+ 
+    fetchProducts();
+    alert("Venda realizada com sucesso!");
+    dialogSell.value = false; 
+  } catch (error) {
+    console.error("Erro ao registrar a venda:", error);
+    alert("Erro ao realizar a venda. Verifique os dados e tente novamente.");
+  }
+  };
+
+
+  const openDialogProductsLowStock = async () => {
+    dialogLowStock.value = true;
+    const response = await axios.get(`http://localhost:8080/produto/ver-em-falta`)
+    productsLowStock.value = response.data
+  };
 
   </script>
   
