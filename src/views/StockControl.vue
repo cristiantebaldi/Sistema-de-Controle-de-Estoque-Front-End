@@ -275,7 +275,6 @@
     const product = ref({});
     const dialog = ref(false);
 
-    const sales = ref([]);
     const sell = ref({});
     const dialogSell = ref(false);
 
@@ -423,10 +422,10 @@
     });
 
   
-    const vendasResponse = await axios.get(`http://localhost:8080/venda`);
-    const vendas = vendasResponse.data;
-    const ultimaVenda = vendas[vendas.length - 1]; 
-    const idVenda = ultimaVenda.id;
+    const salesResponse = await axios.get(`http://localhost:8080/venda`);
+    const sales = salesResponse.data;
+    const lastSell = sales[sales.length - 1]; 
+    const idSell = lastSell.id;
 
     const selectedProduct = products.value.find(
       (p) => p.nome === sell.value.nome
@@ -440,7 +439,7 @@
   
     await axios.post(`http://localhost:8080/venda_produto`, {
       id_produto: selectedProduct.id,
-      id_venda: idVenda,
+      id_venda: idSell,
       quantidade: sell.value.quantidade,
     });
 
@@ -467,7 +466,6 @@
 
   const saveUpdateQtdProduct = async () => {
   try {
-    // Garantindo que o nome e a quantidade estejam preenchidos corretamente
     if (!productAddQtd.value.nome || !productAddQtd.value.quantidade) {
       alert("Preencha todos os campos.");
       return;
