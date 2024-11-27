@@ -1,41 +1,43 @@
 <template>
+  <!--
     <div class="d-flex mt-5">
       <v-card 
         class="d-flex align-center"
         rounded="e-lg"
-        height="50" 
+        height="75" 
         >
         <v-card-text>
           BUSCAR
         </v-card-text>
       </v-card>
-      <v-card-actions>
-        <v-btn
-        prepend-icon="mdi-calendar"
-        width="120"
-        variant="tonal"
-        color="blue"
-        >DATA</v-btn>
+        <v-card-actions >
+          <v-date-input
+            v-model="model"
+            label="Selecione intervalo"
+            width="330px"
+            multiple="range"
+          ></v-date-input>
       </v-card-actions>
       
     </div>
-        
+  -->
     <div>
       <v-container>
         <v-data-table
           :headers="headersSale"
           :items="sales"
-          :height="420"
+          :height="485"
           >
           <template #item.total_arrecadado="{ item }">
-            {{ formatMoney(item.total_arrecadado) }}
+            {{ formatMoney(item.total_arrecadado/100) }}
           </template>
-          <template #item.data_venda="{ item }">
-            {{ formatDate(item.data_venda) }}
+          <template #item.data_compra="{ item }">
+            {{ formatDate(item.data_compra) }}
           </template>
         </v-data-table>
       </v-container>
     </div>
+
   </template>
   
   <script setup>
@@ -45,13 +47,15 @@
   
   const sales = ref([]);
 
+
   const headersSale = ref([
-    {title: "Produto", value: "produto"},
-    {title: "Data", value: "data_venda"},
-    {title: "Quantidade", value: "quantidade_vendida"},
-    {title: "Valor Total", value: "total_arrecadado"},
+    {title: "Produto", key: "nome_produto"},
+    {title: "Quantidade", key: "quantidade"},
+    {title: "Data da Venda", key: "data_compra"},
+    {title: "Valor Total", key: "total_arrecadado"},
+    
   ]);
-  
+
   const formatMoney = (value) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
@@ -74,11 +78,12 @@
     fetchSales();
   })
 
+
   const fetchSales = async () => {
-    const response = await axios.get(`http://localhost:8080/venda/relatorio-por-dia?data_busca=2024-11-01`)
+    const response = await axios.get("http://localhost:8080/venda_produto")
     sales.value = response.data
   };
-
+  
 
   </script>
 

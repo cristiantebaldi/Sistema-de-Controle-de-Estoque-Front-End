@@ -29,6 +29,7 @@
       </v-card-actions>
       <v-card-actions>
         <v-btn
+        @click="createProductAddQtd"
         width="200"
         variant="tonal"
         color="yellow"
@@ -191,8 +192,52 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+    
     <!-- Caixa de Dialogo para repor estoque -->
-
+    <v-dialog v-model="dialogProductAddQtd" width="500" >
+      <v-card>
+        <v-card
+        variant="tonal"
+        rounded="0"
+        >
+         <v-card-text
+         class="d-flex justify-center "
+         > 
+          <h2>Repor Estoque</h2>
+         </v-card-text>
+        </v-card>
+        <v-card-text>
+          <v-row no-gutters>
+            <v-col
+            cols="12" md="7" sm="7">
+            <v-select
+            v-model="productAddQtd.nome"
+            :items="products.map(product => product.nome)"
+            label="Nome do Produto"/>
+            </v-col>
+            <v-col cols="12" md="5" sm="5">
+            <v-text-field
+            class="pl-2"
+            :rules="amountRules"
+            v-model="productAddQtd.quantidade"
+            label="Quantidade"
+            type="number"
+            />
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions>
+          <v-btn
+          prepend-icon="mdi-close"
+          @click="dialogProductAddQtd = false">
+          cancelar</v-btn>
+          <v-btn
+          color="green"
+          prepend-icon="mdi-content-save"
+          @click="saveUpdateQtdProduct">salvar</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <!-- Caixa de Dialogo para baixo estoque -->
     <v-dialog v-model="dialogLowStock" width="500" >
@@ -236,6 +281,9 @@
 
     const productsLowStock = ref([]);
     const dialogLowStock = ref(false);
+
+    const dialogProductAddQtd = ref(false);
+    const productAddQtd = ref({});
 
     const productRules = [
       value => {
@@ -330,7 +378,7 @@
   const updateProduct = (item) => {
     product.value = {
         ...item,
-        preco: formatMoney(item.preco), // Mostra o valor formatado ao editar
+        preco: formatMoney(item.preco),
     };
     dialog.value = true;
 };
@@ -364,7 +412,7 @@
     fetchProducts();
   }
 
-  const createSell = () => {
+  const createSell = async() => {
     dialogSell.value = true
   }
   const saveSell = async () => {
@@ -379,7 +427,6 @@
     const vendas = vendasResponse.data;
     const ultimaVenda = vendas[vendas.length - 1]; 
     const idVenda = ultimaVenda.id;
-
 
     const selectedProduct = products.value.find(
       (p) => p.nome === sell.value.nome
@@ -413,6 +460,40 @@
     const response = await axios.get(`http://localhost:8080/produto/ver-em-falta`)
     productsLowStock.value = response.data
   };
+
+  const createProductAddQtd = async () => {
+    dialogProductAddQtd.value = true;
+  }
+
+  const saveUpdateQtdProduct = async () => {
+  try {
+    // Garantindo que o nome e a quantidade estejam preenchidos corretamente
+    if (!productAddQtd.value.nome || !productAddQtd.value.quantidade) {
+      alert("Preencha todos os campos.");
+      return;
+    }
+
+    const selectedProduct = products.value.find(
+      (p) => p.nome === productAddQtd.value.nome
+    );
+
+    if (!selectedProduct) {
+      alert("Produto não encontrado.");
+      return;
+    }
+
+    await axios.put(
+      `http://localhost:8080/produto/${selectedProduct.id}/entrada/${productAddQtd.value.quantidade}`
+    );
+
+    alert("Quantidade atualizada com sucesso!");
+    fetchProducts();
+    dialogProductAddQtd.value = false;
+  } catch (error) {
+    console.error("Erro ao atualizar a quantidade:", error);
+    alert("Erro ao atualizar a quantidade. Tente novamente.");
+  }
+};
 
   </script>
   
